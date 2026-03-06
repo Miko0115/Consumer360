@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+logs/
+*.csv
+*.png
+!Consumer360_ER_Diagram.png
