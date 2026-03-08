@@ -9,7 +9,6 @@ __pycache__/
 logs/
 
 # IDE & tools
-.claude/
 .vscode/
 
 # Raw & cleaned datasets (large files)
