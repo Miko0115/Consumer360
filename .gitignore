@@ -1,7 +1,26 @@
+# Credentials
+.env
+
+# Python
 __pycache__/
 *.pyc
-.env
+
+# Runtime logs
 logs/
-*.csv
-*.png
-!Consumer360_ER_Diagram.png
+
+# IDE & tools
+.claude/
+.vscode/
+
+# Raw & cleaned datasets (large files)
+online_retail.csv
+online_retail.clean.csv
+
+# Temp / internal files
+consumer360_powerbi_format/
+consumer360-tracker.jsx
+consumer360 report.pdf
+Consumer360_ER_Diagram.png
+docs/plans/
+docs/powerbi_setup_guide.md
+docs/powerbi_fixes_guide.md

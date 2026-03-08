@@ -23,7 +23,7 @@ DB_URL          = os.getenv("DB_URL")
 CHURN_THRESHOLD = 90
 MIN_SUPPORT     = 0.02
 MIN_LIFT        = 1.5
-OUTPUT_DIR      = "/run/media/miko/Autumn/Consumer360 Project/"
+OUTPUT_DIR      = "/run/media/miko/Autumn/Consumer360 Project/output/"
 
 
 try:
@@ -314,7 +314,7 @@ try:
         (df_rfm["R_Raw"].between(60, 180))
     ].sort_values("M_Raw", ascending=False)
 
-    churn_risk.to_csv(OUTPUT_DIR + "docs/churn_risk_list.csv", index=False)
+    churn_risk.to_csv(OUTPUT_DIR + "churn_risk_list.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(16, 10))
 
@@ -336,7 +336,7 @@ try:
     ax.set_yticklabels(retention_matrix.index.astype(str), rotation=0)
 
     plt.tight_layout()
-    plt.savefig("cohort_retention_heatmap.png", dpi=150, bbox_inches="tight")
+    plt.savefig(OUTPUT_DIR + "cohort_retention_heatmap.png", dpi=150, bbox_inches="tight")
     plt.close()
 
     # Gate 8: Output file validation
