@@ -1,24 +1,19 @@
 import pandas as pd
 from sqlalchemy import create_engine, text
 import time
+import os
+from dotenv import load_dotenv
 
-# ── CONFIG ─────────────────────────────────────────────────────────────────
-DB_USER     = "root"
-DB_PASSWORD = "inderepublic"
-DB_HOST     = "localhost"
-DB_PORT     = "3306"
-DB_NAME     = "Online_retail"
-CSV_PATH    = "/run/media/miko/Autumn/Consumer360 Project/online_retail_clean.csv"
+# CONFIG
+load_dotenv()
+DB_URL = os.getenv("DB_URL")
+CSV_PATH    = "online_retail_clean.csv"
 
-# ── CONNECTION ──────────────────────────────────────────────────────────────
-engine = create_engine(
-    f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}",
-    pool_pre_ping=True
-)
-print("✅ Connected to MySQL")
+# CONNECTION
+engine = create_engine(DB_URL, pool_pre_ping=True)
+print("Connected to MySQL")
 
-# ── LOAD CSV ────────────────────────────────────────────────────────────────
-print("📂 Loading clean CSV...")
+# LOAD CSV 
 df = pd.read_csv(CSV_PATH, parse_dates=["InvoiceDate"])
 
 df["Quantity"]   = df["Quantity"].astype("int32")
@@ -26,10 +21,10 @@ df["UnitPrice"]  = df["UnitPrice"].astype("float32")
 df["CustomerID"] = df["CustomerID"].astype("int32")
 df["Amount"]     = df["Amount"].astype("float32")
 
-print(f"   Rows to load : {len(df):,}")
-print(f"   Columns      : {list(df.columns)}")
+print(f"Rows to load: {len(df):,}")
+print(f"Columns: {list(df.columns)}")
 
-# ── CREATE STAGING TABLE ────────────────────────────────────────────────────
+# CREATE STAGING TABLE 
 create_stg_sql = """
 CREATE TABLE IF NOT EXISTS stg_raw_retail (
     InvoiceNo   VARCHAR(20)    NOT NULL,
@@ -48,9 +43,9 @@ with engine.connect() as conn:
     conn.execute(text("DROP TABLE IF EXISTS stg_raw_retail;"))
     conn.execute(text(create_stg_sql))
     conn.commit()
-print("✅ stg_raw_retail table created (fresh)")
+print("stg_raw_retail table created (fresh)")
 
-# ── BULK LOAD ───────────────────────────────────────────────────────────────
+# BULK LOAD 
 start = time.time()
 
 df.to_sql(
@@ -62,9 +57,9 @@ df.to_sql(
     method    = "multi"
 )
 
-print(f"✅ Bulk load complete in {round(time.time() - start, 1)}s")
+print(f"Bulk load complete in {round(time.time() - start, 1)}s")
 
-# ── VALIDATION ──────────────────────────────────────────────────────────────
+# VALIDATION 
 with engine.connect() as conn:
     row_count = conn.execute(
         text("SELECT COUNT(*) FROM stg_raw_retail;")
@@ -73,15 +68,14 @@ with engine.connect() as conn:
         text("SELECT InvoiceNo, Quantity, UnitPrice, Amount, CustomerID FROM stg_raw_retail LIMIT 3;")
     ).fetchall()
 
-print(f"\n── Staging Validation ──────────────────────────────")
-print(f"   Rows in stg_raw_retail : {row_count:,}")
-print(f"   Expected               : ~779,000")
-print(f"\n   Sample rows:")
+print(f"\n Staging Validation")
+print(f"Rows in stg_raw_retail: {row_count:,}")
+print(f"Expected: approximately 779,000")
+print(f"\n Sample rows:")
 for row in sample:
-    print(f"   {row}")
+    print(f"{row}")
 
 assert row_count == len(df), \
-    f"❌ Row mismatch! CSV={len(df):,} | DB={row_count:,}"
+    f"Row mismatch! CSV={len(df):,} | DB={row_count:,}"
 
-print(f"\n✅ Step 4 complete — stg_raw_retail loaded and validated")
-print(f"   Next → Step 5: SQL — Populate Dim_Date → Dim_Customer → Dim_Product")
+print(f"Step 4 complete — stg_raw_retail loaded and validated")
