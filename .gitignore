@@ -16,7 +16,6 @@ online_retail.csv
 online_retail_clean.csv
 
 # Internal / non-repo files
-.claude/
 docs/executive_brief.md
 docs/interview_prep.pdf
 docs/plans/
