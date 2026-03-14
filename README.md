@@ -152,10 +152,3 @@ UCI Machine Learning Repository — [Online Retail Dataset](https://archive.ics.
 - 401,604 transactions | 5,863 customers | 3,877 products | 25 countries
 - Date range: December 2009 – December 2011
 
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-*Built by Squadron Beta | Infotact Solutions*
