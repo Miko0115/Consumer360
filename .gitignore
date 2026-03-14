@@ -13,12 +13,10 @@ logs/
 
 # Raw & cleaned datasets (large files)
 online_retail.csv
-online_retail.clean.csv
+online_retail_clean.csv
 
-# Temp / internal files
-consumer360_powerbi_format/
-consumer360-tracker.jsx
-consumer360 report.pdf
+# Internal / non-repo files
+.claude/
+docs/executive_brief.md
+docs/interview_prep.pdf
 docs/plans/
-docs/powerbi_setup_guide.md
-docs/powerbi_fixes_guide.md
