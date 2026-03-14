@@ -11,26 +11,27 @@ from sklearn.metrics import classification_report, roc_auc_score
 from lifetimes import BetaGeoFitter, GammaGammaFitter
 from mlxtend.frequent_patterns import apriori, association_rules
 from mlxtend.preprocessing import TransactionEncoder
-# from utils.validation import check_row_count, check_value_range
 import os
 import sys
 import warnings
 warnings.filterwarnings("ignore")
 
 
+# Load credentials from .env file
 load_dotenv()
 DB_URL          = os.getenv("DB_URL")
 CHURN_THRESHOLD = 90
 MIN_SUPPORT     = 0.02
 MIN_LIFT        = 1.5
-OUTPUT_DIR      = "/run/media/miko/Autumn/Consumer360 Project/output/"
+OUTPUT_DIR      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output") + os.sep
 
 
 try:
+    # Connect to MySQL (pool_pre_ping prevents stale connection errors in cron)
     engine = create_engine(DB_URL, pool_pre_ping=True)
     print("Connected to MySQL")
 
-
+    # Load one row per customer with RFM raw values and NTILE scores
     df_rfm = pd.read_sql("SELECT * FROM vw_SingleCustomerView", con=engine)
 
     # Gate 1: Source validation
@@ -48,6 +49,9 @@ try:
     print(f"{len(df_rfm):} customers_loaded")
 
 
+    # Assign segments based on RFM score combinations:
+    # Champions: high on all three | At Risk: low recency but high F & M
+    # Loyalists: high F & M regardless of recency | Hibernating: everyone else
     def assign_segment(row):
         r, f, m = row["R_Score"], row["F_Score"], row["M_Score"]
 
@@ -64,7 +68,7 @@ try:
     print(df_rfm["Segment"].value_counts().to_string())
     print(f"Total Segments: {df_rfm['Segment'].nunique()} (Champions / Loyalists / At Risk/ Hibernating)")
 
-    # Customer Segmentation Validation
+    # Audit table: avg recency, frequency, revenue per segment
     segment_audit = df_rfm.groupby("Segment").agg(
         CustomerCount = ("CustomerID", "count"),
         AvgRecency = ("R_Raw", "mean"),
@@ -88,7 +92,7 @@ try:
         raise ValueError(f"Gate 2 FAILED: Champions not top revenue - got {segment_audit.index[0]}")
     print("Gate 2 PASSED: Segmentation validated")
 
-    # Logistic Regression
+    # Churn label: 1 if no purchase in 90+ days, else 0
     df_rfm["Churned"] = (df_rfm["R_Raw"] > CHURN_THRESHOLD).astype(int)
     churn_rate = df_rfm["Churned"].mean()
 
@@ -98,17 +102,21 @@ try:
     print(f"Active(0): {(df_rfm['Churned']==0).sum():,}")
     print(f"Churn rate: {churn_rate:.1%}")
 
+    # R_Raw excluded to prevent data leakage (it defines the churn label)
     features = ["F_Raw", "M_Raw", "F_Score", "M_Score"]
     X = df_rfm[features]
     y = df_rfm["Churned"]
 
+    # Normalize features — logistic regression is scale-sensitive
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
+    # Stratified split preserves churn class ratio in both sets
     X_train, X_test, y_train, y_test = train_test_split(
         X_scaled, y, test_size=0.2, random_state=42, stratify=y
     )
 
+    # L2 regularization (C=0.1) to prevent overfitting on 4 features
     lr = LogisticRegression(C=0.1, solver="lbfgs", max_iter=1000, random_state=42)
     lr.fit(X_train, y_train)
 
@@ -119,6 +127,7 @@ try:
     print(classification_report(y_test, y_pred, target_names=["Active", "Churned"]))
     print(f"ROC-AUC Score: {auc:.4f}")
 
+    # Score every customer with churn probability (0 to 1)
     df_rfm["ChurnedProbability"] = lr.predict_proba(
         scaler.transform(df_rfm[features])
     )[:, 1].round(4)
@@ -134,7 +143,9 @@ try:
         raise ValueError(f"Gate 3 FAILED: Churn probability outside [0,1]")
     print(f"Gate 3 PASSED: AUC={auc:.4f}, churn rate={churn_rate:.1%}")
 
-    # CLV Prediction
+    # CLV: query repeat customer purchase history (frequency, recency, T in weeks)
+    # frequency = repeat purchases (total - 1), recency = first to last purchase,
+    # T = customer age (first purchase to dataset end), HAVING frequency > 0 = repeat only
     clv_data = pd.read_sql("""
                            SELECT
                                 f.CustomerID,
@@ -153,17 +164,22 @@ try:
     print(clv_data)
     print(f"{len(clv_data)}: customers")
 
+    # BG/NBD: models purchase frequency and probability of still being "alive"
     bgf = BetaGeoFitter(penalizer_coef=0.01)
     bgf.fit(clv_data["frequency"], clv_data["recency"], clv_data["T"])
 
+    # Predict expected purchases over next 52 weeks (1 year)
     clv_data["predicted_purchase_1yr"] = bgf.conditional_expected_number_of_purchases_up_to_time(
                                                 52, clv_data["frequency"], clv_data["recency"], clv_data["T"]
     ).round(2)
 
+    # Gamma-Gamma: estimates expected monetary value per transaction
+    # Requires frequency > 1 (at least 2 repeat purchases) to fit
     repeat_customers = clv_data[clv_data["frequency"] > 1].copy()
     ggf = GammaGammaFitter(penalizer_coef=0.01)
     ggf.fit(repeat_customers["frequency"], repeat_customers["avg_order_value"])
 
+    # 12-month CLV = predicted purchases * expected transaction value, discounted at 1%
     clv_values = ggf.customer_lifetime_value(
         bgf,
         clv_data["frequency"],
@@ -186,6 +202,7 @@ try:
     print(f"Gate 4 PASSED: CLV range ${clv_data['CLV_12months'].min():.2f} - ${clv_data['CLV_12months'].max():.2f}")
 
 
+    # Left join: merge CLV predictions back into RFM table (single-purchase = NaN)
     df_final = df_rfm.merge(
         clv_data[["CustomerID", "predicted_purchase_1yr", "CLV_12months"]],
         how="left"
@@ -200,6 +217,7 @@ try:
     print("Gate 5 PASSED: Merge validated")
 
 
+    # Export master customer file and CLV predictions
     df_final[[
         "CustomerID", "Country", "FirstPurchase", "LastPurchase", "Segment",
         "R_Raw", "F_Raw", "M_Raw", "R_Score", "F_Score", "M_Score", "RFM_Score",
@@ -211,6 +229,7 @@ try:
     print(f"rfm_segments.csv: {len(df_final):,} rows")
     print(f"clv_predictions.csv: {len(clv_data):,} rows")
 
+    # Load transaction-product pairs for basket analysis (non-returns only)
     df_trans = pd.read_sql("""
                            SELECT
                                 f.InvoiceNo,
@@ -223,6 +242,7 @@ try:
     print(f"Rows loaded: {len(df_trans):,}")
     print(f"Unique Invoices: {df_trans['InvoiceNo'].nunique():,}")
 
+    # Group products by invoice into basket lists, then one-hot encode
     basket_sets = df_trans.groupby("InvoiceNo")["Description"].apply(list).to_list()
     te = TransactionEncoder()
     te_array = te.fit_transform(basket_sets)
@@ -230,12 +250,14 @@ try:
 
     print(f"Basket Matrix: {basket_matrix.shape}")
 
+    # Apriori: find product pairs appearing in 2%+ of baskets
     frequent_itemsets = apriori(
         basket_matrix, min_support=MIN_SUPPORT, use_colnames=True, max_len=2
     )
 
     print(f"Frequent Itemsets: {len(frequent_itemsets):,}")
 
+    # Generate association rules, keep only pairs with lift > 1.5
     rules = association_rules(frequent_itemsets, metric="lift", min_threshold=MIN_LIFT)
     rules["antecedents"] = rules["antecedents"].apply(lambda x: ", ".join(list(x)))
     rules["consequents"] = rules["consequents"].apply(lambda x: ", ".join(list(x)))
@@ -256,7 +278,7 @@ try:
 
     print(f"basket_rules.csv: {len(rules):,} rules")
 
-    #Cohort Retention
+    # Cohort Retention: load purchase dates (exclude returns)
     df_coh = pd.read_sql("""
         SELECT
             f.CustomerID,
@@ -271,6 +293,8 @@ try:
 
     print(f"{len(df_coh):,} rows loaded ")
 
+    # CohortMonth = customer's first purchase month
+    # CohortIndex = months elapsed since first purchase (0, 1, 2, ...)
     df_coh["OrderMonth"] = df_coh["InvoiceDate"].dt.to_period("M")
     df_coh["CohortMonth"] = df_coh.groupby("CustomerID")["InvoiceDate"] \
         .transform("min").dt.to_period("M")
@@ -278,10 +302,12 @@ try:
 
     print(df_coh)
 
+    # Pivot into retention matrix: unique customers per cohort per month
     cohort_data = (
         df_coh.groupby(["CohortMonth", "CohortIndex"])["CustomerID"].nunique().reset_index()
     )
 
+    # Normalize by cohort size to get retention percentages (M+0 = 100%)
     cohort_matrix = cohort_data.pivot(index="CohortMonth", columns="CohortIndex", values="CustomerID")
     cohort_sizes = cohort_matrix[0]
     retention_matrix = cohort_matrix.divide(cohort_sizes, axis=0).round(4)
@@ -304,18 +330,21 @@ try:
     print("Gate 7 PASSED: Retention Matrix valid")
 
 
+    # Export retention as percentages (0-100) with cohort sizes
     out = (retention_matrix * 100).round(2)
     out_index = out.index.astype(str)
     out.columns = [f"M+({i})" for i in out.columns]
     out.insert(0, "CohortSize", cohort_sizes.values)
     out.to_csv(OUTPUT_DIR + "cohort_retention.csv", index=False)
-    
+
+    # Flag at-risk customers: inactive 60-180 days, sorted by revenue (highest first)
     churn_risk = df_rfm[
         (df_rfm["R_Raw"].between(60, 180))
     ].sort_values("M_Raw", ascending=False)
 
     churn_risk.to_csv(OUTPUT_DIR + "churn_risk_list.csv", index=False)
 
+    # Generate cohort retention heatmap (YlOrRd_r: green=high, red=low retention)
     fig, ax = plt.subplots(figsize=(16, 10))
 
     sns.heatmap(
@@ -350,9 +379,11 @@ try:
         print(f"✓ {fname}: {row_count} rows, {os.path.getsize(path)/1024:.1f} KB")
     print("All 8 gates passed — pipeline complete")
 
+# Log error and exit for cron
 except Exception as e:
     print(f"PIPELINE FAILED: {e}", file=sys.stderr)
     sys.exit(1)
+# Close DB connection (even after failure) to prevent connection leaks
 finally:
     if 'engine' in dir():
         engine.dispose()
