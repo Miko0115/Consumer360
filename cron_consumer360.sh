@@ -1,5 +1,5 @@
 #!/bin/bash
-PROJECT_DIR="/run/media/miko/Autumn/Consumer360 Project"
+PROJECT_DIR="/run/media/miko/Autumn/My Projects/Consumer360 Project"
 LOG_DIR="$PROJECT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
