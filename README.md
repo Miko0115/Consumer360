@@ -157,6 +157,42 @@ Pipeline generates 5 CSVs and a heatmap in `output/`. Here's a sample from `rfm_
 
 Each row is one customer with their RFM scores, segment label, churn probability (0–1), and predicted 12-month CLV.
 
+### clv_predictions.csv
+12-month lifetime value forecast for repeat customers.
+
+| CustomerID | Frequency | Recency (wks) | T (wks) | Avg Order Value | Predicted Purchases | CLV 12mo |
+|------------|----------:|--------------:|--------:|----------------:|--------------------:|---------:|
+| 12346 | 11 | 57.14 | 103.57 | 2,281.07 | 0.93 | 1,997.70 |
+| 12347 | 7 | 57.43 | 57.71 | 22.17 | 6.03 | 128.23 |
+| 12348 | 4 | 51.86 | 62.57 | 39.60 | 3.44 | 130.52 |
+
+### basket_rules.csv
+Cross-sell product pairs from Apriori association rule mining.
+
+| Antecedent | Consequent | Support | Confidence | Lift |
+|------------|------------|--------:|-----------:|-----:|
+| Teacup Regency Roses | Teacup Regency Green | 2.05% | 70.5% | 27.4x |
+| Teacup Regency Green | Teacup Regency Roses | 2.05% | 79.7% | 27.4x |
+| Sweetheart Ceramic Trinket Box | Strawberry Ceramic Trinket Pot | 2.33% | 73.2% | 14.2x |
+
+### cohort_retention.csv
+Monthly retention percentages by acquisition cohort.
+
+| Cohort Size | M+0 | M+1 | M+2 | M+3 | M+4 | M+5 | ... | M+11 |
+|------------:|----:|----:|----:|----:|----:|----:|----:|-----:|
+| 954 | 100% | 35% | 33% | 42% | 38% | 36% | ... | 49% |
+| 382 | 100% | 21% | 31% | 31% | 26% | 30% | ... | 17% |
+| 375 | 100% | 24% | 23% | 29% | 25% | 20% | ... | 13% |
+
+### churn_risk_list.csv
+High-value customers inactive 60–180 days — win-back campaign targets.
+
+| CustomerID | Country | Segment | Days Inactive | Revenue | Churn Prob |
+|------------|---------|---------|-------------:|---------:|-----------:|
+| 18251 | United Kingdom | Loyalists | 87 | 26,279 | 0.17 |
+| 13802 | United Kingdom | Loyalists | 138 | 26,259 | 0.14 |
+| 12939 | United Kingdom | Loyalists | 64 | 25,265 | 0.13 |
+
 ---
 
 ## Dataset
