@@ -147,15 +147,16 @@ If any gate fails, the pipeline halts with a descriptive error and non-zero exit
 
 ## Sample Output
 
-Pipeline generates 5 CSVs and a heatmap in `output/`. Here's a sample from `rfm_segments.csv`:
+Pipeline generates 5 CSVs and a heatmap in `output/`.
+
+### rfm_segments.csv
+Master customer file — one row per customer with segment, churn probability, and CLV.
 
 | CustomerID | Country | Segment | R_Raw | F_Raw | M_Raw | R_Score | F_Score | M_Score | RFM_Score | ChurnProbability | CLV_12months |
 |------------|---------|---------|------:|------:|------:|--------:|--------:|--------:|----------:|-----------------:|-------------:|
 | 15729 | United Kingdom | Hibernating | 212 | 3 | 192.55 | 2 | 3 | 1 | 6 | 0.5848 | 32.05 |
 | 14768 | United Kingdom | Hibernating | 17 | 2 | 192.60 | 5 | 3 | 1 | 9 | 0.5909 | 128.73 |
 | 12522 | Germany | Hibernating | 39 | 2 | 192.72 | 4 | 3 | 1 | 8 | 0.5909 | 84.17 |
-
-Each row is one customer with their RFM scores, segment label, churn probability (0–1), and predicted 12-month CLV.
 
 ### clv_predictions.csv
 12-month lifetime value forecast for repeat customers.
@@ -178,11 +179,11 @@ Cross-sell product pairs from Apriori association rule mining.
 ### cohort_retention.csv
 Monthly retention percentages by acquisition cohort.
 
-| Cohort Size | M+0 | M+1 | M+2 | M+3 | M+4 | M+5 | ... | M+11 |
-|------------:|----:|----:|----:|----:|----:|----:|----:|-----:|
-| 954 | 100% | 35% | 33% | 42% | 38% | 36% | ... | 49% |
-| 382 | 100% | 21% | 31% | 31% | 26% | 30% | ... | 17% |
-| 375 | 100% | 24% | 23% | 29% | 25% | 20% | ... | 13% |
+| CohortSize | M+(0) | M+(1) | M+(2) | M+(3) | M+(4) | M+(5) | M+(6) | M+(7) | M+(8) | M+(9) | M+(10) | M+(11) |
+|-----------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|------:|-------:|-------:|
+| 954 | 100 | 35.22 | 33.23 | 42.45 | 37.95 | 35.85 | 37.74 | 34.28 | 33.65 | 36.06 | 42.03 | 49.48 |
+| 382 | 100 | 20.68 | 31.15 | 30.63 | 26.44 | 30.10 | 25.92 | 23.04 | 28.01 | 31.68 | 30.10 | 17.28 |
+| 375 | 100 | 24.00 | 22.67 | 29.33 | 24.53 | 19.73 | 19.20 | 28.80 | 25.60 | 27.73 | 11.47 | 12.53 |
 
 ### churn_risk_list.csv
 High-value customers inactive 60–180 days — win-back campaign targets.
