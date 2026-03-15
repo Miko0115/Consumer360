@@ -145,6 +145,20 @@ If any gate fails, the pipeline halts with a descriptive error and non-zero exit
 | Europe Manager | 13 European countries |
 | Rest of World | Australia, Japan, USA, Canada, etc. |
 
+## Sample Output
+
+Pipeline generates 5 CSVs and a heatmap in `output/`. Here's a sample from `rfm_segments.csv`:
+
+| CustomerID | Country | Segment | R_Raw | F_Raw | M_Raw | R_Score | F_Score | M_Score | RFM_Score | ChurnProbability | CLV_12months |
+|------------|---------|---------|------:|------:|------:|--------:|--------:|--------:|----------:|-----------------:|-------------:|
+| 15729 | United Kingdom | Hibernating | 212 | 3 | 192.55 | 2 | 3 | 1 | 6 | 0.5848 | 32.05 |
+| 14768 | United Kingdom | Hibernating | 17 | 2 | 192.60 | 5 | 3 | 1 | 9 | 0.5909 | 128.73 |
+| 12522 | Germany | Hibernating | 39 | 2 | 192.72 | 4 | 3 | 1 | 8 | 0.5909 | 84.17 |
+
+Each row is one customer with their RFM scores, segment label, churn probability (0–1), and predicted 12-month CLV.
+
+---
+
 ## Dataset
 
 UCI Machine Learning Repository — [Online Retail Dataset](https://archive.ics.uci.edu/dataset/352/online+retail)
