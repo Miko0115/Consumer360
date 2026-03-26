@@ -9,7 +9,7 @@ An end-to-end customer analytics pipeline that segments customers using RFM scor
 | Customers Analyzed          | 5,863                                          |
 | Transactions Processed      | 401,604                                        |
 | RFM Segments                | 4 (Champions, Loyalists, At Risk, Hibernating) |
-| Churn Model AUC             | > 0.60                                         |
+| Churn Model AUC             | > 0.79                                         |
 | At-Risk Customers Flagged   | 1,101                                          |
 | Cross-Sell Rules Discovered | 60                                             |
 | Monthly Cohorts Tracked     | 25                                             |
@@ -116,7 +116,7 @@ crontab -e
 | ----- | -------------------------------------- | -------------------------------- |
 | 1     | Source data validation                 | Row count, nulls, uniqueness     |
 | 2     | RFM segmentation                       | Score ranges 1–5, full coverage |
-| 3     | Churn prediction (Logistic Regression) | AUC = 0.70                       |
+| 3     | Churn prediction (Logistic Regression) | AUC = 0.79                       |
 | 4     | CLV forecasting (BG/NBD + Gamma-Gamma) | No negative values               |
 | 5     | Customer data merge                    | < 20% customer loss              |
 | 6     | Basket analysis (Apriori)              | Min rules, lift > 1              |
