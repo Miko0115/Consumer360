@@ -9,7 +9,7 @@ An end-to-end customer analytics pipeline that segments customers using RFM scor
 | Customers Analyzed          | 5,863                                          |
 | Transactions Processed      | 401,604                                        |
 | RFM Segments                | 4 (Champions, Loyalists, At Risk, Hibernating) |
-| Churn Model AUC             | > 0.79                                         |
+| Churn Model AUC             | = 0.79                                         |
 | At-Risk Customers Flagged   | 1,101                                          |
 | Cross-Sell Rules Discovered | 60                                             |
 | Monthly Cohorts Tracked     | 25                                             |
