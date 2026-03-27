@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
+import os
+
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 # Loading raw data
-df = pd.read_csv("online_retail.csv")
+df = pd.read_csv(os.path.join(BASE_DIR, "online_retail.csv"))
 print(df)
 
 print(f"Raw rows: {len(df):,}") 
@@ -54,6 +57,6 @@ df["Country"] = df["Country"].str.strip()
 
 df.drop_duplicates(inplace=True)
 
-df.to_csv("online_retail_clean.csv", index=False)
+df.to_csv(os.path.join(BASE_DIR, "online_retail_clean.csv"), index=False)
 
 print(df.shape)

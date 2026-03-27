@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # CONFIG
 load_dotenv()
 DB_URL = os.getenv("DB_URL")
-CSV_PATH    = "online_retail_clean.csv"
+CSV_PATH    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "online_retail_clean.csv")
 
 # CONNECTION
 engine = create_engine(DB_URL, pool_pre_ping=True)

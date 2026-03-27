@@ -333,9 +333,9 @@ try:
 
     # Export retention as percentages (0-100) with cohort sizes
     out = (retention_matrix * 100).round(2)
-    out_index = out.index.astype(str)
-    out.columns = [f"M+({i})" for i in out.columns]
-    out.insert(0, "CohortSize", cohort_sizes.values)
+    out.insert(0, "CohortMonth", out.index.astype(str))
+    out.columns = ["CohortMonth"] + [f"M+({i})" for i in out.columns[1:]]
+    out.insert(1, "CohortSize", cohort_sizes.values)
     out.to_csv(OUTPUT_DIR + "cohort_retention.csv", index=False)
 
     # Flag at-risk customers: inactive 60-180 days, sorted by revenue (highest first)
